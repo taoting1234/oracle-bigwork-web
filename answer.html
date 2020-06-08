@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>测试考试</title>
+  <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
+  <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <style>
+    html * {
+      margin: 0 auto;
+      padding: 0;
+      text-align: center;
+    }
+
+    .problem {
+      width: 800px;
+      margin: 10px auto;
+      border: 1px solid #000;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar navbar-default" role="navigation">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="#">Oracle在线考试系统</a>
+    </div>
+    <div>
+      <ul class="nav navbar-nav">
+        <li><a href="index.html">主页</a></li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+            <span id="nickname">nickname</span>
+            <b class="caret"></b>
+          </a>
+          <ul class="dropdown-menu">
+            <li><a href="login.html">注销</a></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+<h2 id="title">测试考试</h2>
+<br>
+<div id="problem_list">
+  <div class="problem" id="problem_1">
+    <p class="text-left">1.2+2=?</p>
+    <br>
+    <p class="text-left"><input type="radio" id="problem_1_1" name="problem_1" value="1"> <label
+        for="problem_1_1">A.1</label></p>
+    <br>
+    <p class="text-left"><input type="radio" id="problem_1_2" name="problem_1" value="2"> <label
+        for="problem_1_2">B.2</label></p>
+    <br>
+    <p class="text-left"><input type="radio" id="problem_1_3" name="problem_1" value="3"> <label
+        for="problem_1_3">C.3</label></p>
+    <br>
+    <p class="text-left"><input type="radio" id="problem_1_4" name="problem_1" value="4"> <label
+        for="problem_1_4">D.4</label></p>
+  </div>
+  <div class="problem" id="problem_2">
+    <p class="text-left">2.2+2>?</p>
+    <br>
+    <p class="text-left"><input type="checkbox" id="problem_2_1" name="problem_2" value="1"> <label
+        for="problem_2_1">A.1</label></p>
+    <br>
+    <p class="text-left"><input type="checkbox" id="problem_2_2" name="problem_2" value="2"> <label
+        for="problem_2_2">B.2</label></p>
+    <br>
+    <p class="text-left"><input type="checkbox" id="problem_2_3" name="problem_2" value="3"> <label
+        for="problem_2_3">C.3</label></p>
+    <br>
+    <p class="text-left"><input type="checkbox" id="problem_2_4" name="problem_2" value="4"> <label
+        for="problem_2_4">D.4</label></p>
+  </div>
+</div>
+<div class="form-group">
+  <div class="col-sm-offset-1 col-sm-10">
+    <button class="btn btn-default" onclick="submit()">提交</button>
+  </div>
+</div>
+</body>
+<script src="js/base.js"></script>
+<script>
+  ajax("http://" + host + "/session", 'get').then((data) => {
+    console.log(data);
+    if (data.code !== undefined) {
+      alert(data.message);
+      window.location.href = "./login.html";
+      return
+    }
+    document.getElementById("nickname").innerText = data.idCard;
+  })
+  let id = $_GET['id'];
+  console.log(id);
+  let problem_id_list = [];
+  ajax("http://" + host + "/examination/" + id, 'get').then((data) => {
+    console.log(data);
+    document.getElementById("title").innerText = data.name;
+    document.title = data.name;
+    let problem_list = document.getElementById("problem_list");
+    problem_list.innerText = "";
+    data.problemList = shuffle(data.problemList);
+    let len = data.problemList.length;
+    if (len > 10) {
+      len = 10;
+    }
+    for (let i = 0; i < len; i++) {
+      let problem = data.problemList[i];
+      problem_id_list[i] = problem.id;
+      let problem_element = document.createElement("div");
+      problem_element.className = "problem";
+      problem_element.id = "problem_" + (i + 1);
+      let problem_name = document.createElement("p");
+      problem_name.className = 'text-left';
+      problem_name.innerText = i + 1 + "." + problem.name + "（分值：" + problem.score + "）";
+      problem_element.appendChild(problem_name);
+      problem.answerList = shuffle(problem.answerList);
+      for (let j = 0; j < problem.answerList.length; j++) {
+        let answer = problem.answerList[j];
+        let option = document.createElement("input");
+        if (data.problemList[i].type === 0) {
+          option.type = "radio";
+        } else {
+          option.type = "checkbox";
+        }
+        option.id = "problem_" + (i + 1) + "_" + (j + 1);
+        option.name = "problem_" + (i + 1);
+        option.value = answer.id;
+        let label = document.createElement("label");
+        label.htmlFor = "problem_" + (i + 1) + "_" + (j + 1);
+        label.innerText = String.fromCharCode(65 + j) + ". " + answer.answer;
+        problem_element.appendChild(document.createElement("br"));
+        let pp = document.createElement("p");
+        pp.className = 'text-left';
+        pp.appendChild(option);
+        pp.append(" ");
+        pp.appendChild(label);
+        problem_element.appendChild(pp);
+      }
+      problem_list.appendChild(problem_element)
+    }
+  })
+
+  function submit() {
+    let data = [];
+    let f = 0;
+    for (let i = 1; i <= problem_id_list.length; i++) {
+      let problem_id = problem_id_list[i - 1];
+      let elements = document.getElementsByName("problem_" + i);
+      let s = "";
+      for (let j = 0; j < elements.length; j++) {
+        let element = elements[j];
+        if (element.checked) {
+          s += element.value;
+          s += ",";
+        }
+      }
+      if (!s) {
+        document.getElementById("problem_" + i).style.border = "1px solid red";
+        f = 1;
+      } else {
+        document.getElementById("problem_" + i).style.border = "1px solid #000";
+      }
+      s = s.substr(0, s.length - 1)
+
+      data[i - 1] = {
+        problem_id: problem_id,
+        answer: s
+      }
+    }
+    if (f) {
+      alert("有题目未作答");
+      return;
+    }
+    console.log(data);
+    ajax("http://" + host + "/examination/" + id + "/submit", 'post', data).then((data) => {
+      if (data.code === 0) {
+        alert("提交成功");
+        window.location.href = "./submit_log.html?id=" + data.message;
+        return
+      }
+      alert(data.message);
+    })
+  }
+
+</script>
+</html>
